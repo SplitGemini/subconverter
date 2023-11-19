@@ -1,2 +1,13 @@
 subconverter.exe
 .vscode
+/curl/
+/libcron/
+/yaml-cpp/
+/quickjspp/
+/toml11/
+/Makefile
+/CMakeCache.txt
+/cmake_install.cmake
+/CMakeFiles/
+/subconverter/
+/rapidjson/

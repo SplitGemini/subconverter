@@ -965,7 +965,7 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
 {
     std::string proxytype, ps, server, port, cipher, group, password; //common
     std::string type = "none", id, aid = "0", net = "tcp", path, host, edge, tls, sni; //vmess
-    std::string plugin, pluginopts, pluginopts_mode, pluginopts_host, pluginopts_mux; //ss
+    std::string plugin, pluginopts, pluginopts_mode, pluginopts_host, pluginopts_mux, pluginopts_headers; //ss
     std::string protocol, protoparam, obfs, obfsparam; //ssr
     std::string user; //socks
     std::string ip, ipv6, private_key, public_key, mtu; //wireguard
@@ -1034,7 +1034,6 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
             break;
         case "ss"_hash:
             group = SS_DEFAULT_GROUP;
-
             singleproxy["cipher"] >>= cipher;
             singleproxy["password"] >>= password;
             if(singleproxy["plugin"].IsDefined())
@@ -1051,6 +1050,7 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
                     break;
                 case "v2ray-plugin"_hash:
                     plugin = "v2ray-plugin";
+                    pluginopts_headers.clear();
                     if(singleproxy["plugin-opts"].IsDefined())
                     {
                         singleproxy["plugin-opts"]["mode"] >>= pluginopts_mode;
@@ -1058,6 +1058,17 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
                         tls = safe_as<bool>(singleproxy["plugin-opts"]["tls"]) ? "tls;" : "";
                         singleproxy["plugin-opts"]["path"] >>= path;
                         pluginopts_mux = safe_as<bool>(singleproxy["plugin-opts"]["mux"]) ? "mux=4;" : "";
+                        
+                        if (singleproxy["plugin-opts"]["headers"].IsMap()){
+                            size_t i =0;
+                            for (auto it = singleproxy["plugin-opts"]["headers"].begin(); it != singleproxy["plugin-opts"]["headers"].end(); ++it){
+                                pluginopts_headers += it->first.as<std::string>() + "=" + it->second.as<std::string>();
+                                if (i != singleproxy["plugin-opts"]["headers"].size() - 1){
+                                    pluginopts_headers += "|";
+                                }
+                                i ++;
+                            }
+                        }
                     }
                     break;
                 default:
@@ -1088,6 +1099,8 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
                     pluginopts += "path=" + path + ";";
                 if(!pluginopts_mux.empty())
                     pluginopts += "mux=" + pluginopts_mux + ";";
+                if(!pluginopts_headers.empty())
+                    pluginopts += "headers=" + pluginopts_headers + ";";
                 break;
             }
 

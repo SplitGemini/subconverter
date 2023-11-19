@@ -280,6 +280,16 @@ void proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGr
                 singleproxy["plugin-opts"]["mode"] = getUrlArg(pluginopts, "mode");
                 singleproxy["plugin-opts"]["host"] = getUrlArg(pluginopts, "host");
                 singleproxy["plugin-opts"]["path"] = getUrlArg(pluginopts, "path");
+                auto plugin_headers_str = getUrlArg(pluginopts, "headers");
+                if(!plugin_headers_str.empty()){
+                    auto plugin_headers = split(plugin_headers_str, "|");
+                    for(auto && header : plugin_headers){
+                        auto header_kv = split(header, "=");
+                        if(header_kv.size() == 2)
+                            singleproxy["plugin-opts"]["headers"][header_kv[0]] = header_kv[1];
+                    }
+                    
+                }
                 singleproxy["plugin-opts"]["tls"] = pluginopts.find("tls") != std::string::npos;
                 singleproxy["plugin-opts"]["mux"] = pluginopts.find("mux") != std::string::npos;
                 if(!scv.is_undef())
