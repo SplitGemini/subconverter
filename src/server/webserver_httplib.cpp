@@ -5,11 +5,11 @@
 #define CPPHTTPLIB_REQUEST_URI_MAX_LENGTH 16384
 #include "httplib.h"
 
-#include "../utils/base64/base64.h"
-#include "../utils/logger.h"
-#include "../utils/string_hash.h"
-#include "../utils/stl_extra.h"
-#include "../utils/urlencode.h"
+#include "utils/base64/base64.h"
+#include "utils/logger.h"
+#include "utils/string_hash.h"
+#include "utils/stl_extra.h"
+#include "utils/urlencode.h"
 #include "webserver.h"
 
 static const char *request_header_blacklist[] = {"host", "accept", "accept-encoding"};
@@ -47,16 +47,23 @@ static httplib::Server::Handler makeHandler(const responseRoute &rr)
             {
                 continue;
             }
-            req.headers[h.first] = h.second;
+            req.headers.emplace(h.first.data(), h.second.data());
         }
         req.argument = request.params;
-        if (request.get_header_value("Content-Type") == "application/x-www-form-urlencoded")
+        if (request.method == "POST" || request.method == "PUT" || request.method == "PATCH")
         {
-            req.postdata = urlDecode(req.postdata);
-        }
-        else
-        {
-            req.postdata = request.body;
+            if (request.is_multipart_form_data() && !request.files.empty())
+            {
+                req.postdata = request.files.begin()->second.content;
+            }
+            else if (request.get_header_value("Content-Type") == "application/x-www-form-urlencoded")
+            {
+                req.postdata = urlDecode(request.body);
+            }
+            else
+            {
+                req.postdata = request.body;
+            }
         }
         auto result = rr.rc(req, resp);
         response.status = resp.status_code;
@@ -71,6 +78,18 @@ static httplib::Server::Handler makeHandler(const responseRoute &rr)
         }
         response.set_content(result, content_type);
     };
+}
+
+static std::string dump(const httplib::Headers &headers)
+{
+    std::string s;
+    for (auto &x: headers)
+    {
+        if (startsWith(x.first, "LOCAL_") || startsWith(x.first, "REMOTE_"))
+            continue;
+        s += x.first + ": " + x.second + "|";
+    }
+    return s;
 }
 
 int WebServer::start_web_server_multi(listener_args *args)
@@ -116,11 +135,16 @@ int WebServer::start_web_server_multi(listener_args *args)
             res.set_header("Access-Control-Allow-Origin", "*");
             res.set_header("Access-Control-Allow-Headers", "Content-Type,Authorization");
         }
+        else
+        {
+            res.status = 404;
+        }
     });
     server.set_pre_routing_handler([&](const httplib::Request &req, httplib::Response &res)
     {
         writeLog(0, "Accept connection from client " + req.remote_addr + ":" + std::to_string(req.remote_port), LOG_LEVEL_DEBUG);
         writeLog(0, "handle_cmd:    " + req.method + " handle_uri:    " + req.target, LOG_LEVEL_VERBOSE);
+        writeLog(0, "handle_header: " + dump(req.headers), LOG_LEVEL_VERBOSE);
 
         if (req.has_header("SubConverter-Request"))
         {
@@ -146,19 +170,32 @@ int WebServer::start_web_server_multi(listener_args *args)
         {
             res.set_header("Access-Control-Allow-Headers", req.get_header_value("Access-Control-Request-Headers"));
         }
+        res.set_header("Access-Control-Allow-Origin", "*");
         return httplib::Server::HandlerResponse::Unhandled;
     });
     for (auto &x : redirect_map)
     {
         server.Get(x.first, [x](const httplib::Request &req, httplib::Response &res) {
-            res.set_redirect(x.second);
+            auto arguments = req.params;
+            auto query = x.second;
+            auto pos = query.find('?');
+            query += pos == std::string::npos ? '?' : '&';
+            for (auto &p: arguments)
+            {
+                query += p.first + "=" + urlEncode(p.second) + "&";
+            }
+            if (!query.empty())
+            {
+                query.pop_back();
+            }
+            res.set_redirect(query);
         });
     }
     server.set_exception_handler([](const httplib::Request &req, httplib::Response &res, const std::exception_ptr &e)
     {
         try
         {
-            std::rethrow_exception(e);
+            if (e) std::rethrow_exception(e);
         }
         catch (const httplib::Error &err)
         {
@@ -183,6 +220,9 @@ int WebServer::start_web_server_multi(listener_args *args)
     {
         server.set_mount_point("/", serve_file_root);
     }
+    server.new_task_queue = [args] {
+        return new httplib::ThreadPool(args->max_workers);
+    };
     server.bind_to_port(args->listen_address, args->port, 0);
 
     std::thread thread([&]()

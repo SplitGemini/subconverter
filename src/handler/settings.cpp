@@ -2,12 +2,12 @@
 #include <mutex>
 #include <toml.hpp>
 
-#include "../config/binding.h"
-#include "../handler/webget.h"
-#include "../script/cron.h"
-#include "../server/webserver.h"
-#include "../utils/logger.h"
-#include "../utils/network.h"
+#include "config/binding.h"
+#include "handler/webget.h"
+#include "script/cron.h"
+#include "server/webserver.h"
+#include "utils/logger.h"
+#include "utils/network.h"
 #include "interfaces.h"
 #include "multithread.h"
 #include "settings.h"
@@ -377,6 +377,7 @@ void readYAMLConf(YAML::Node &node)
         section["append_sub_userinfo"] >> global.appendUserinfo;
         section["clash_use_new_field_name"] >> global.clashUseNewField;
         section["clash_proxies_style"] >> global.clashProxiesStyle;
+        section["clash_proxy_groups_style"] >> global.clashProxyGroupsStyle;
         section["singbox_add_clash_modes"] >> global.singBoxAddClashModes;
     }
 
@@ -566,13 +567,13 @@ void readYAMLConf(YAML::Node &node)
 }
 
 template <class T, class... U>
-void find_if_exist(const toml::value &v, const toml::key &k, T& target, U&&... args)
+void find_if_exist(const toml::value &v, const toml::value::key_type &k, T& target, U&&... args)
 {
     if(v.contains(k)) target = toml::find<T>(v, k);
     if constexpr (sizeof...(args) > 0) find_if_exist(v, std::forward<U>(args)...);
 }
 
-void operate_toml_kv_table(const std::vector<toml::table> &arr, const toml::key &key_name, const toml::key &value_name, std::function<void (const toml::value&, const toml::value&)> binary_op)
+void operate_toml_kv_table(const std::vector<toml::table> &arr, const toml::value::key_type &key_name, const toml::value::key_type &value_name, std::function<void (const toml::value&, const toml::value&)> binary_op)
 {
     for(const toml::table &table : arr)
     {
@@ -638,6 +639,7 @@ void readTOMLConf(toml::value &root)
                   "append_sub_userinfo", global.appendUserinfo,
                   "clash_use_new_field_name", global.clashUseNewField,
                   "clash_proxies_style", global.clashProxiesStyle,
+                  "clash_proxy_groups_style", global.clashProxyGroupsStyle,
                   "singbox_add_clash_modes", global.singBoxAddClashModes
     );
 
@@ -801,7 +803,7 @@ void readConf()
                 return readYAMLConf(yaml);
         }
         toml::value conf = parseToml(prefdata, global.prefPath);
-        if(!conf.is_uninitialized() && toml::find_or<int>(conf, "version", 0))
+        if(!conf.is_empty() && toml::find_or<int>(conf, "version", 0))
             return readTOMLConf(conf);
     }
     catch (YAML::Exception &e)
@@ -883,6 +885,7 @@ void readConf()
         ini.get_bool_if_exist("append_sub_userinfo", global.appendUserinfo);
         ini.get_bool_if_exist("clash_use_new_field_name", global.clashUseNewField);
         ini.get_if_exist("clash_proxies_style", global.clashProxiesStyle);
+        ini.get_if_exist("clash_proxy_groups_style", global.clashProxyGroupsStyle);
         ini.get_bool_if_exist("singbox_add_clash_modes", global.singBoxAddClashModes);
         if(ini.item_prefix_exist("rename_node"))
         {
@@ -1167,7 +1170,7 @@ int loadExternalTOML(toml::value &root, ExternalConfig &ext)
                   "exclude_remarks", ext.exclude
     );
 
-    if(ext.tpl_args != nullptr) operate_toml_kv_table(toml::find_or<std::vector<toml::table>>(section, "template_args", {}), "key", "value",
+    if(ext.tpl_args != nullptr) operate_toml_kv_table(toml::find_or<std::vector<toml::table>>(root, "template_args", {}), "key", "value",
                                                       [&](const toml::value &key, const toml::value &value)
     {
         std::string val = toml::format(value);
@@ -1210,7 +1213,7 @@ int loadExternalConfig(std::string &path, ExternalConfig &ext)
         if(yaml.size() && yaml["custom"].IsDefined())
             return loadExternalYAML(yaml, ext);
         toml::value conf = parseToml(base_content, path);
-        if(!conf.is_uninitialized() && toml::find_or<int>(conf, "version", 0))
+        if(!conf.is_empty() && toml::find_or<int>(conf, "version", 0))
             return loadExternalTOML(conf, ext);
     }
     catch (YAML::Exception &e)

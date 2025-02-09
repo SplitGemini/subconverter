@@ -65,10 +65,6 @@ if [ ! -d toml11 ]; then
     cd ..
 fi
 
-# python -m ensurepip
-# python -m pip install gitpython
-# python scripts/update_rules.py -c scripts/rules_config.conf
-
 cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" .
 make -j$core
 rm subconverter.exe

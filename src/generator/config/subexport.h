@@ -7,12 +7,12 @@
 #include <quickjspp.hpp>
 #endif // NO_JS_RUNTIME
 
-#include "../../config/proxygroup.h"
-#include "../../config/regmatch.h"
-#include "../../parser/config/proxy.h"
-#include "../../utils/ini_reader/ini_reader.h"
-#include "../../utils/string.h"
-#include "../../utils/yamlcpp_extra.h"
+#include "config/proxygroup.h"
+#include "config/regmatch.h"
+#include "parser/config/proxy.h"
+#include "utils/ini_reader/ini_reader.h"
+#include "utils/string.h"
+#include "utils/yamlcpp_extra.h"
 #include "ruleconvert.h"
 
 struct extra_settings
@@ -39,6 +39,7 @@ struct extra_settings
     bool clash_classical_ruleset = false;
     std::string sort_script;
     std::string clash_proxies_style = "flow";
+    std::string clash_proxy_groups_style = "flow";
     bool authorized = false;
 
     extra_settings() = default;

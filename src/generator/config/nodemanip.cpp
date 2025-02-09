@@ -3,18 +3,18 @@
 #include <iostream>
 #include <algorithm>
 
-#include "../../handler/settings.h"
-#include "../../handler/webget.h"
-#include "../../parser/config/proxy.h"
-#include "../../parser/infoparser.h"
-#include "../../parser/subparser.h"
-#include "../../script/script_quickjs.h"
-#include "../../utils/file_extra.h"
-#include "../../utils/logger.h"
-#include "../../utils/map_extra.h"
-#include "../../utils/network.h"
-#include "../../utils/regexp.h"
-#include "../../utils/urlencode.h"
+#include "handler/settings.h"
+#include "handler/webget.h"
+#include "parser/config/proxy.h"
+#include "parser/infoparser.h"
+#include "parser/subparser.h"
+#include "script/script_quickjs.h"
+#include "utils/file_extra.h"
+#include "utils/logger.h"
+#include "utils/map_extra.h"
+#include "utils/network.h"
+#include "utils/regexp.h"
+#include "utils/urlencode.h"
 #include "nodemanip.h"
 #include "subexport.h"
 
@@ -157,7 +157,7 @@ int addNodes(std::string link, std::vector<Proxy> &allNodes, int groupID, parse_
                 writeLog(LOG_TYPE_WARN, "No system proxy is set. Skipping.");
         }
         */
-        if(strSub.size())
+        if(!strSub.empty())
         {
             writeLog(LOG_TYPE_INFO, "Parsing subscription data...");
             if(explodeConfContent(strSub, nodes) == 0)

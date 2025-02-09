@@ -11,3 +11,7 @@ subconverter.exe
 /CMakeFiles/
 /subconverter/
 /rapidjson/
+cmake-build-debug
+.idea
+base/cache
+build
