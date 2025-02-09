@@ -2,7 +2,7 @@
 set -xe
 core=$(nproc)
 if [ ! -d curl ]; then
-    git clone https://github.com/curl/curl --depth=1 --branch curl-8_4_0
+    git clone https://github.com/curl/curl --depth=1 --branch curl-8_6_0
     rm -rf curl/.git
     cd curl
     cmake -DCMAKE_BUILD_TYPE=Release -DCURL_USE_OPENSSL=ON -DCURL_USE_LIBSSH2=OFF -DHTTP_ONLY=ON -DCURL_USE_SCHANNEL=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_CURL_EXE=OFF -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" -DHAVE_LIBIDN2=OFF -DCURL_USE_LIBPSL=OFF .
@@ -57,7 +57,7 @@ if [ ! -d rapidjson ]; then
 fi
 
 if [ ! -d toml11 ]; then
-    git clone https://github.com/ToruNiina/toml11 --depth=1
+    git clone https://github.com/ToruNiina/toml11 -b "v4.3.0" --depth=1
     rm -rf toml11/.git
     cd toml11
     cmake -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" -DCMAKE_CXX_STANDARD=11 .

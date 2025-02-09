@@ -98,7 +98,7 @@ void httpConstruct(Proxy &node, const std::string &group, const std::string &rem
     node.TLSSecure = tls;
 }
 
-void trojanConstruct(Proxy &node, const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &network, const std::string &host, const std::string &path, bool tlssecure, tribool udp, tribool tfo, tribool scv, tribool tls13, const std::string& underlying_proxy)
+void trojanConstruct(Proxy &node, const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &network, const std::string &host, const std::string &path, bool tlssecure, tribool udp, tribool tfo, tribool scv, tribool tls13, const std::string& alpn, const std::string& underlying_proxy)
 {
     commonConstruct(node, ProxyType::Trojan, group, remarks, server, port, udp, tfo, scv, tls13, underlying_proxy);
     node.Password = password;
@@ -106,6 +106,10 @@ void trojanConstruct(Proxy &node, const std::string &group, const std::string &r
     node.TLSSecure = tlssecure;
     node.TransferProtocol = network.empty() ? "tcp" : network;
     node.Path = path;
+    if (!alpn.empty())
+    {
+        node.Alpn = StringArray {alpn};
+    }
 }
 
 void snellConstruct(Proxy &node, const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const std::string &password, const std::string &obfs, const std::string &host, uint16_t version, tribool udp, tribool tfo, tribool scv, const std::string& underlying_proxy)
@@ -1271,6 +1275,12 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
             {
             case "grpc"_hash:
                 singleproxy["grpc-opts"]["grpc-service-name"] >>= path;
+                if(singleproxy["alpn"]){
+                    if (singleproxy["alpn"].IsSequence())
+                        singleproxy["alpn"][0] >>= alpn;
+                    else
+                        singleproxy["alpn"] >>= alpn;
+                }
                 break;
             case "ws"_hash:
                 singleproxy["ws-opts"]["path"] >>= path;
@@ -1281,7 +1291,7 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
                 break;
             }
 
-            trojanConstruct(node, group, ps, server, port, password, net, host, path, true, udp, tfo, scv, tribool(),  underlying_proxy);
+            trojanConstruct(node, group, ps, server, port, password, net, host, path, true, udp, tfo, scv, tribool(), alpn, underlying_proxy);
             break;
         case "snell"_hash:
             group = SNELL_DEFAULT_GROUP;

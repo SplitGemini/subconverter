@@ -453,6 +453,8 @@ void proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGr
                 singleproxy["network"] = x.TransferProtocol;
                 if(!x.Path.empty())
                     singleproxy["grpc-opts"]["grpc-service-name"] = x.Path;
+                if(!x.Alpn.empty())
+                    singleproxy["alpn"] = x.Alpn;
                 break;
             case "ws"_hash:
                 singleproxy["network"] = x.TransferProtocol;
